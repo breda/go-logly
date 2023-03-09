@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"log"
+	"net"
 	"net/http"
 
+	"github.com/breda/logly/internal/grpc"
 	logglyHttp "github.com/breda/logly/internal/http"
 	"github.com/breda/logly/internal/logly"
 )
@@ -28,16 +30,26 @@ func init() {
 }
 
 func main() {
-	httpServer := logglyHttp.New(getLoggly())
+	// Init loggly
+	loggly := getLoggly()
 
+	grpcServer := grpc.NewGrpcServer(loggly)
+	grpcLn, err := net.Listen("tcp", ":3332")
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("started gRPC server on port 3332")
+	go grpcServer.Serve(grpcLn)
+
+	httpServer := logglyHttp.New(loggly)
 	http.HandleFunc("/append", httpServer.HandleAppend)
 	http.HandleFunc("/fetch", httpServer.HandleFetch)
 
 	log.Println("started HTTP server on port 3333")
-	err := http.ListenAndServe(":3333", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	go http.ListenAndServe(":3333", nil)
+
+	// Block forever
+	<-make(chan struct{})
 }
 
 func getLoggly() *logly.Logly {
