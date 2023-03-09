@@ -10,7 +10,7 @@ import (
 
 	logv1 "github.com/breda/logly/api/v1"
 	"github.com/breda/logly/internal/index"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 type FileStore struct {
