@@ -1,14 +1,25 @@
 package http
 
 import (
-	"log"
+	"bytes"
+	"encoding/json"
 	"net/http"
+	"time"
+
+	"github.com/rs/zerolog"
 )
 
-func handleHttpError(err error, w http.ResponseWriter) {
+func handleHttpError(err error, w http.ResponseWriter, logger *zerolog.Logger) {
 	if err != nil {
-		log.Println("error: ", err)
+		logger.Err(err).Send()
 
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		var buf bytes.Buffer
+		err := HttpError{
+			Error: err.Error(),
+			Time:  time.Now(),
+		}
+
+		json.NewEncoder(&buf).Encode(&err)
+		http.Error(w, buf.String(), http.StatusBadRequest)
 	}
 }

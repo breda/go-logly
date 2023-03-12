@@ -1,5 +1,10 @@
 package index
 
+import (
+	"github.com/breda/logly/internal/logger"
+	"github.com/rs/zerolog"
+)
+
 type Node struct {
 	id     int64
 	offset int64
@@ -8,14 +13,16 @@ type Node struct {
 }
 
 type BinaryTreeIndex struct {
-	root *Node
-	size int64
+	root   *Node
+	size   int64
+	logger *zerolog.Logger
 }
 
 func NewBinaryTreeIndex() *BinaryTreeIndex {
 	return &BinaryTreeIndex{
-		root: nil,
-		size: 0,
+		root:   nil,
+		size:   0,
+		logger: logger.New("bintree-index"),
 	}
 }
 
@@ -161,4 +168,8 @@ func (tree *BinaryTreeIndex) Put(id, offset int64) {
 
 func (tree *BinaryTreeIndex) Type() string {
 	return "binary-search-tree"
+}
+
+func (tree *BinaryTreeIndex) Logger() *zerolog.Logger {
+	return tree.logger
 }

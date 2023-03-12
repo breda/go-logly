@@ -2,13 +2,15 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net"
 	"net/http"
 
 	"github.com/breda/logly/internal/grpc"
 	logglyHttp "github.com/breda/logly/internal/http"
+	"github.com/breda/logly/internal/logger"
 	"github.com/breda/logly/internal/logly"
+	"github.com/rs/zerolog"
+	"google.golang.org/grpc/credentials"
 )
 
 var (
@@ -17,6 +19,9 @@ var (
 
 	memoryIndex  bool
 	binTreeIndex bool
+
+	certFile string
+	keyFile  string
 )
 
 func init() {
@@ -26,47 +31,69 @@ func init() {
 	flag.BoolVar(&memoryIndex, "idx-memory", false, "Use an in-memory (hash) index")
 	flag.BoolVar(&binTreeIndex, "idx-bintree", false, "Use a binary-tree based index")
 
+	// TLS
+	flag.StringVar(&certFile, "cert", "./config/localhost.pem", "Certificate file used for TLS connections")
+	flag.StringVar(&keyFile, "key", "./config/localhost-key.pem", "Certificate ket file used for TLS connections")
+
 	flag.Parse()
 }
 
 func main() {
-	// Init loggly
-	loggly := getLoggly()
+	// Init Logly
+	logger := logger.New("main")
+	logly := getLogly(logger)
 
-	grpcServer := grpc.NewGrpcServer(loggly)
-	grpcLn, err := net.Listen("tcp", ":3332")
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("started gRPC server on port 3332")
-	go grpcServer.Serve(grpcLn)
+	// Start servers
+	go startGRPCServer(logly)
+	go startHttpServer(logly)
 
-	httpServer := logglyHttp.New(loggly)
-	http.HandleFunc("/append", httpServer.HandleAppend)
-	http.HandleFunc("/fetch", httpServer.HandleFetch)
-
-	log.Println("started HTTP server on port 3333")
-	go http.ListenAndServe(":3333", nil)
-
-	// Block forever
+	// And block forver
 	<-make(chan struct{})
 }
 
-func getLoggly() *logly.Logly {
+func startGRPCServer(logly *logly.Logly) {
+	creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
+	if err != nil {
+		logly.Logger.Fatal().Err(err)
+	}
+
+	grpcServer := grpc.NewGrpcServer(logly, creds)
+
+	grpcLn, err := net.Listen("tcp", ":3332")
+	if err != nil {
+		logly.Logger.Fatal().Err(err)
+	}
+
+	logly.Logger.Info().Msg("started gRPC secure server on port 3332")
+	grpcServer.Serve(grpcLn)
+}
+
+func startHttpServer(logly *logly.Logly) {
+	httpServer := logglyHttp.New(logly)
+
+	http.HandleFunc("/append", httpServer.HandleAppend)
+	http.HandleFunc("/fetch", httpServer.HandleFetch)
+	http.HandleFunc("/", httpServer.HandleIndex)
+
+	logly.Logger.Info().Msg("started HTTP secure server on port 3333")
+	http.ListenAndServeTLS(":3333", certFile, keyFile, nil)
+}
+
+func getLogly(logger *zerolog.Logger) *logly.Logly {
 	if memoryStore && fileStore {
-		log.Fatal("Cannot choose two storage systems at the same time")
+		logger.Fatal().Str("error", "cannot choose two store systems at the same time").Send()
 	}
 
 	if memoryStore {
-		log.Println("using in-memory storage")
+		logger.Info().Msg("using in-memory storage")
 		return logly.InMemory()
 	}
 
 	if fileStore {
-		log.Println("using file storage (data.db)")
+		logger.Info().Msg("using file storage (data.db)")
 
 		if memoryIndex && binTreeIndex {
-			log.Fatal("Cannot choose two index systems at the same time")
+			logger.Fatal().Str("error", "cannot choose two indexing systems at the same time").Send()
 		}
 
 		return logly.File()

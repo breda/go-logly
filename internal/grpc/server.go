@@ -6,6 +6,7 @@ import (
 	logv1 "github.com/breda/logly/api/v1"
 	"github.com/breda/logly/internal/logly"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 type GrpcServer struct {
@@ -19,8 +20,8 @@ func newGrpcServer(logly *logly.Logly) *GrpcServer {
 	}
 }
 
-func NewGrpcServer(logly *logly.Logly) *grpc.Server {
-	gsrv := grpc.NewServer()
+func NewGrpcServer(logly *logly.Logly, creds credentials.TransportCredentials) *grpc.Server {
+	gsrv := grpc.NewServer(grpc.Creds(creds))
 	srv := newGrpcServer(logly)
 
 	logv1.RegisterLoglyServer(gsrv, srv)

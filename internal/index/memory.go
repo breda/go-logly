@@ -1,14 +1,21 @@
 package index
 
+import (
+	"github.com/breda/logly/internal/logger"
+	"github.com/rs/zerolog"
+)
+
 type InMemoryIndex struct {
 	// Index maps the record ID to an offset in stored db file.
-	index map[int64]int64
-	size  int64
+	index  map[int64]int64
+	size   int64
+	logger *zerolog.Logger
 }
 
 func InMemory() *InMemoryIndex {
 	return &InMemoryIndex{
-		index: make(map[int64]int64),
+		index:  make(map[int64]int64),
+		logger: logger.New("memory-index"),
 	}
 }
 
@@ -36,4 +43,8 @@ func (i *InMemoryIndex) Size() int64 {
 
 func (i *InMemoryIndex) Type() string {
 	return "memory"
+}
+
+func (i *InMemoryIndex) Logger() *zerolog.Logger {
+	return i.logger
 }

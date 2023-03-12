@@ -4,17 +4,21 @@ import (
 	"log"
 	"sync"
 
+	"github.com/breda/logly/internal/logger"
 	"github.com/breda/logly/internal/store"
+	"github.com/rs/zerolog"
 )
 
 type Logly struct {
-	mtx   sync.Mutex
-	store store.Store
+	mtx    sync.Mutex
+	Logger *zerolog.Logger
+	store  store.Store
 }
 
 func InMemory() *Logly {
 	return &Logly{
-		store: store.NewInMemoryStore(),
+		store:  store.NewInMemoryStore(),
+		Logger: logger.New("logly"),
 	}
 }
 
@@ -25,6 +29,7 @@ func File() *Logly {
 	}
 
 	return &Logly{
-		store: fileStore,
+		store:  fileStore,
+		Logger: logger.New("logly"),
 	}
 }

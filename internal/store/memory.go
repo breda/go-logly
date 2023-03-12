@@ -5,10 +5,13 @@ import (
 	"sync"
 
 	logv1 "github.com/breda/logly/api/v1"
+	"github.com/breda/logly/internal/logger"
+	"github.com/rs/zerolog"
 )
 
 type InMemoryStore struct {
-	mtx sync.Mutex
+	mtx    sync.Mutex
+	Logger *zerolog.Logger
 
 	size    uint64
 	records []*logv1.Record
@@ -18,6 +21,7 @@ func NewInMemoryStore() *InMemoryStore {
 	return &InMemoryStore{
 		size:    0,
 		records: make([]*logv1.Record, 0),
+		Logger:  logger.New("memory-store"),
 	}
 }
 

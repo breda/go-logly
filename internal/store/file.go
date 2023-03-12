@@ -4,17 +4,19 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"sync"
 
 	logv1 "github.com/breda/logly/api/v1"
 	"github.com/breda/logly/internal/index"
+	"github.com/breda/logly/internal/logger"
+	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 )
 
 type FileStore struct {
-	mtx sync.Mutex
+	mtx    sync.Mutex
+	Logger *zerolog.Logger
 
 	index index.Index
 
@@ -45,6 +47,7 @@ func NewFileStore() (*FileStore, error) {
 		index:  indexSystem,
 		file:   file,
 		nextId: 1,
+		Logger: logger.New("file-store"),
 	}
 
 	err = store.Init()
@@ -96,8 +99,8 @@ func (s *FileStore) Init() error {
 		s.nextId++
 	}
 
-	log.Println("initialized db: next id:", s.nextId)
-	log.Printf("initialized %s index with: %d entries", s.index.Type(), s.index.Size())
+	s.Logger.Info().Str("message", "initialized storage system").Int64("next_id", s.nextId).Send()
+	s.index.Logger().Info().Msg(fmt.Sprintf("initialized %s index with %d entries", s.index.Type(), s.index.Size()))
 
 	return nil
 }
@@ -122,13 +125,13 @@ func (s *FileStore) Write(record *logv1.Record) (id uint64, err error) {
 	// Write the size
 	_, err = s.file.Write(sizeBytes)
 	if err != nil {
-		log.Fatal(err)
+		s.Logger.Fatal().Err(err)
 	}
 
 	// Write the data
 	_, err = s.file.Write(data)
 	if err != nil {
-		log.Fatal(err)
+		s.Logger.Fatal().Err(err)
 	}
 
 	// Advance the next ID

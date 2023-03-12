@@ -1,11 +1,18 @@
 package http
 
 import (
+	"time"
+
 	"github.com/breda/logly/internal/logly"
 )
 
 type HttpServer struct {
 	logly *logly.Logly
+}
+
+type HttpError struct {
+	Error string    `json:"error"`
+	Time  time.Time `json:"time"`
 }
 
 type HttpAppendRequest struct {
@@ -22,4 +29,8 @@ type HttpFetchRequest struct {
 
 type HttpFetchResponse struct {
 	Data string `json:"data"`
+}
+
+type HttpIndexResponse struct {
+	Message string `json:"message"`
 }
