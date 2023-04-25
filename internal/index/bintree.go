@@ -22,7 +22,7 @@ func NewBinaryTreeIndex() *BinaryTreeIndex {
 	return &BinaryTreeIndex{
 		root:   nil,
 		size:   0,
-		logger: logger.New("bintree-index"),
+		logger: logger.New("bst-index"),
 	}
 }
 
@@ -167,7 +167,7 @@ func (tree *BinaryTreeIndex) Put(id, offset int64) {
 }
 
 func (tree *BinaryTreeIndex) Type() string {
-	return "binary-search-tree"
+	return "bst"
 }
 
 func (tree *BinaryTreeIndex) Logger() *zerolog.Logger {

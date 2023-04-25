@@ -1,3 +1,6 @@
+build: clean compile
+	go build -o logly ./cmd/main.go
+
 compile:
 	protoc api/v1/*.proto \
 		--go_out=. \
@@ -8,6 +11,3 @@ compile:
 
 clean:
 	rm -rf logly
-
-build: clean compile
-	go build -o logly ./cmd/main.go

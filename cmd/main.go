@@ -15,8 +15,10 @@ import (
 )
 
 var (
-	addr string
-	port string
+	addr    string
+	port    string
+	name    string
+	cluster string
 
 	certFile string
 	keyFile  string
@@ -30,8 +32,10 @@ var (
 
 func init() {
 	// connection settings
-	flag.StringVar(&addr, "addr", "localhost", "Network address to bind to")
+	flag.StringVar(&addr, "addr", "127.0.0.1", "Network address to bind to")
 	flag.StringVar(&port, "port", "3333", "Network port to bind to")
+	flag.StringVar(&name, "name", "default", "Name of the node")
+	flag.StringVar(&cluster, "cluster", "", "Cluster node address")
 
 	// TLS
 	flag.StringVar(&certFile, "cert", "./config/localhost.pem", "Certificate file used for TLS connections")
@@ -39,10 +43,10 @@ func init() {
 
 	// Flags
 	flag.BoolVar(&memoryStore, "memory", false, "Choose in-memory storage system")
-	flag.BoolVar(&fileStore, "file", false, "Choose file storage system (data.db file)")
+	flag.BoolVar(&fileStore, "file", true, "Choose file storage system (data.db file)")
 
 	flag.BoolVar(&memoryIndex, "idx-memory", false, "Use an in-memory (hash) index")
-	flag.BoolVar(&binTreeIndex, "idx-bintree", false, "Use a binary-tree based index")
+	flag.BoolVar(&binTreeIndex, "idx-bintree", true, "Use a binary-tree based index")
 
 	flag.Parse()
 }
@@ -54,7 +58,7 @@ func main() {
 
 	// Start servers
 	go startGRPCServer(logly)
-	go startHttpServer(logly)
+	//go startHttpServer(logly)
 
 	// And block forver
 	<-make(chan struct{})
@@ -84,28 +88,17 @@ func startHttpServer(logly *logly.Logly) {
 	http.HandleFunc("/fetch", httpServer.HandleFetch)
 	http.HandleFunc("/", httpServer.HandleIndex)
 
-	logly.Logger.Info().Msg(fmt.Sprintf("started HTTP secure server on %s:%s", addr, "3332"))
-	http.ListenAndServeTLS(net.JoinHostPort(addr, "3332"), certFile, keyFile, nil)
+	logly.Logger.Info().Msg(fmt.Sprintf("started HTTP secure server on %s:%s", addr, port))
+	http.ListenAndServeTLS(net.JoinHostPort(addr, port), certFile, keyFile, nil)
 }
 
 func getLogly(logger *zerolog.Logger) *logly.Logly {
-	if memoryStore && fileStore {
-		logger.Fatal().Str("error", "cannot choose two store systems at the same time").Send()
-	}
-
 	if memoryStore {
-		logger.Info().Msg("using in-memory storage")
-		return logly.InMemory()
+		return logly.InMemory(name, addr, port, cluster)
 	}
 
 	if fileStore {
-		logger.Info().Msg("using file storage (data.db)")
-
-		if memoryIndex && binTreeIndex {
-			logger.Fatal().Str("error", "cannot choose two indexing systems at the same time").Send()
-		}
-
-		return logly.File()
+		return logly.File(name, addr, port, cluster)
 	}
 
 	return nil

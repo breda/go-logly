@@ -1,6 +1,7 @@
 package discover
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/hashicorp/serf/serf"
@@ -42,6 +43,9 @@ func (m *Membership) setupSerf() error {
 
 func (m *Membership) eventHandler() {
 	for event := range m.events {
+
+		m.Logger.Info().Msg(fmt.Sprintf("new event: %s", event.String()))
+
 		switch event.EventType() {
 		case serf.EventMemberJoin:
 			for _, member := range event.(serf.MemberEvent).Members {

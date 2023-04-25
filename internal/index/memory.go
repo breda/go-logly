@@ -15,7 +15,7 @@ type InMemoryIndex struct {
 func InMemory() *InMemoryIndex {
 	return &InMemoryIndex{
 		index:  make(map[int64]int64),
-		logger: logger.New("memory-index"),
+		logger: logger.New("mem-index"),
 	}
 }
 
@@ -42,7 +42,7 @@ func (i *InMemoryIndex) Size() int64 {
 }
 
 func (i *InMemoryIndex) Type() string {
-	return "memory"
+	return "inmem"
 }
 
 func (i *InMemoryIndex) Logger() *zerolog.Logger {
